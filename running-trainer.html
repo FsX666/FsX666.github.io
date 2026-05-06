@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Split Runner</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --run-color: #ff3f2d;
+    --walk-color: #00d4aa;
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --border: #1f1f2e;
+    --text: #f0f0f5;
+    --muted: #5a5a72;
+    --accent: #ff3f2d;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+    padding: 20px;
+  }
+
+  /* Animated background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse 60% 60% at 50% 50%, #1a0a0a 0%, var(--bg) 70%);
+    pointer-events: none;
+    transition: background 1s ease;
+    z-index: 0;
+  }
+  body.walking::before {
+    background: radial-gradient(ellipse 60% 60% at 50% 50%, #001a16 0%, var(--bg) 70%);
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    align-items: center;
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2rem, 8vw, 3rem);
+    letter-spacing: 0.12em;
+    color: var(--text);
+    text-align: center;
+  }
+  h1 span { color: var(--run-color); }
+
+  /* Phase indicator */
+  .phase-ring {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .phase-ring svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .ring-bg { fill: none; stroke: var(--border); stroke-width: 8; }
+  .ring-progress {
+    fill: none;
+    stroke: var(--run-color);
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 628;
+    stroke-dashoffset: 628;
+    transition: stroke-dashoffset 0.4s linear, stroke 0.5s ease;
+  }
+
+  .phase-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-align: center;
+  }
+
+  .phase-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.2rem, 9vw, 3.5rem);
+    letter-spacing: 0.08em;
+    line-height: 1;
+    color: var(--run-color);
+    transition: color 0.5s ease;
+    animation: pulsate 1s ease-in-out infinite;
+  }
+  body.walking .phase-label { color: var(--walk-color); animation: none; }
+  body.idle .phase-label { color: var(--muted); animation: none; }
+
+  @keyframes pulsate {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
+  .phase-countdown {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    transition: color 0.5s;
+  }
+  body.walking .phase-countdown { color: var(--walk-color); opacity: 0.7; }
+
+  /* Main timer */
+  .timer-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(4rem, 16vw, 6rem);
+    letter-spacing: 0.04em;
+    line-height: 1;
+    color: var(--text);
+    text-align: center;
+  }
+
+  /* Global progress bar */
+  .global-progress {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    height: 8px;
+    overflow: hidden;
+  }
+  .global-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--run-color), var(--walk-color));
+    border-radius: 100px;
+    width: 0%;
+    transition: width 0.5s linear;
+  }
+
+  /* Interval counter */
+  .interval-info {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    text-align: center;
+  }
+  .info-item { display: flex; flex-direction: column; gap: 4px; }
+  .info-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 0.05em;
+    color: var(--text);
+  }
+  .info-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+  }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .btn {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.1em;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 14px 32px;
+    transition: all 0.2s ease;
+  }
+  .btn-primary {
+    background: var(--run-color);
+    color: #fff;
+    font-size: 1.3rem;
+    padding: 16px 48px;
+  }
+  .btn-primary:hover { background: #ff5c4d; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-secondary {
+    background: var(--surface);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--muted); color: var(--text); }
+
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none !important; }
+
+  /* Settings */
+  .settings-toggle {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.2s;
+  }
+  .settings-toggle:hover { color: var(--text); }
+  .settings-toggle svg { transition: transform 0.3s; }
+  .settings-toggle.open svg { transform: rotate(180deg); }
+
+  .settings-panel {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    display: none;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .settings-panel.visible { display: flex; }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .setting-label {
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    flex: 1;
+  }
+  .setting-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .setting-control button {
+    background: var(--border);
+    border: none;
+    color: var(--text);
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+  .setting-control button:hover { background: var(--muted); }
+  .setting-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.05em;
+    color: var(--text);
+    min-width: 60px;
+    text-align: center;
+  }
+
+  /* Finish overlay */
+  .finish-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+    padding: 20px;
+  }
+  .finish-overlay.visible { display: flex; }
+  .finish-emoji { font-size: 4rem; }
+  .finish-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem;
+    letter-spacing: 0.1em;
+    color: var(--walk-color);
+  }
+  .finish-stats {
+    font-size: 1rem;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+  .finish-stats strong { color: var(--text); }
+</style>
+</head>
+<body class="idle">
+
+<div class="container">
+  <h1>FRACTIONNÉ <span>RUNNER</span></h1>
+
+  <!-- Phase ring -->
+  <div class="phase-ring">
+    <svg viewBox="0 0 220 220">
+      <circle class="ring-bg" cx="110" cy="110" r="100"/>
+      <circle class="ring-progress" id="ringProgress" cx="110" cy="110" r="100"/>
+    </svg>
+    <div class="phase-center">
+      <div class="phase-label" id="phaseLabel">PRÊT</div>
+      <div class="phase-countdown" id="phaseCountdown">—</div>
+    </div>
+  </div>
+
+  <!-- Main timer -->
+  <div class="timer-display" id="mainTimer">00:00</div>
+
+  <!-- Global progress -->
+  <div class="global-progress">
+    <div class="global-bar" id="globalBar"></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="interval-info">
+    <div class="info-item">
+      <div class="info-value" id="intervalCount">0</div>
+      <div class="info-label">Intervalles</div>
+    </div>
+    <div class="info-item">
+      <div class="info-value" id="remainingTime">—</div>
+      <div class="info-label">Restant</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn btn-secondary" id="resetBtn" disabled>RESET</button>
+    <button class="btn btn-primary" id="startBtn">DÉMARRER</button>
+  </div>
+
+  <!-- Settings toggle -->
+  <button class="settings-toggle" id="settingsToggle">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+      <path d="M6 8L1 3h10L6 8z"/>
+    </svg>
+    Paramètres
+  </button>
+
+  <!-- Settings panel -->
+  <div class="settings-panel" id="settingsPanel">
+
+    <div class="setting-row">
+      <div class="setting-label">Intervalle (secondes)</div>
+      <div class="setting-control">
+        <button onclick="adjustSetting('interval', -5)">−</button>
+        <div class="setting-value" id="intervalDisplay">30s</div>
+        <button onclick="adjustSetting('interval', 5)">+</button>
+      </div>
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-label">Durée totale (minutes)</div>
+      <div class="setting-control">
+        <button onclick="adjustSetting('duration', -1)">−</button>
+        <div class="setting-value" id="durationDisplay">17m</div>
+        <button onclick="adjustSetting('duration', 1)">+</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Finish overlay -->
+<div class="finish-overlay" id="finishOverlay">
+  <div class="finish-emoji">🏃</div>
+  <div class="finish-title">SÉANCE TERMINÉE !</div>
+  <div class="finish-stats" id="finishStats"></div>
+  <button class="btn btn-primary" onclick="resetAll()">NOUVELLE SÉANCE</button>
+</div>
+
+<script>
+// --- Settings ---
+let settings = {
+  interval: 30,   // seconds
+  duration: 17    // minutes
+};
+
+// --- State ---
+let elapsed = 0;         // seconds elapsed
+let phaseElapsed = 0;    // seconds in current phase
+let isRunning = false;
+let currentPhase = 'run'; // 'run' | 'walk'
+let intervalCount = 0;
+let ticker = null;
+
+// --- Speech ---
+const synth = window.speechSynthesis;
+function speak(text) {
+  if (!synth) return;
+  synth.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'fr-FR';
+  utter.rate = 1.0;
+  utter.pitch = 1.1;
+  utter.volume = 1.0;
+  synth.speak(utter);
+}
+
+// --- UI refs ---
+const phaseLabel = document.getElementById('phaseLabel');
+const phaseCountdown = document.getElementById('phaseCountdown');
+const mainTimer = document.getElementById('mainTimer');
+const globalBar = document.getElementById('globalBar');
+const intervalCount_el = document.getElementById('intervalCount');
+const remainingTime_el = document.getElementById('remainingTime');
+const startBtn = document.getElementById('startBtn');
+const resetBtn = document.getElementById('resetBtn');
+const ringProgress = document.getElementById('ringProgress');
+const finishOverlay = document.getElementById('finishOverlay');
+const finishStats = document.getElementById('finishStats');
+
+// Ring circumference = 2π*100 ≈ 628
+const CIRCUMFERENCE = 2 * Math.PI * 100;
+
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+function setPhase(phase) {
+  currentPhase = phase;
+  phaseElapsed = 0;
+  if (phase === 'run') {
+    phaseLabel.textContent = 'RUNNING';
+    document.body.className = 'running';
+    ringProgress.style.stroke = 'var(--run-color)';
+    speak('Running');
+    intervalCount++;
+    intervalCount_el.textContent = intervalCount;
+  } else {
+    phaseLabel.textContent = 'WALKING';
+    document.body.className = 'walking';
+    ringProgress.style.stroke = 'var(--walk-color)';
+    speak('Walking');
+  }
+}
+
+function tick() {
+  elapsed++;
+  phaseElapsed++;
+  const totalSec = settings.duration * 60;
+
+  // Check end
+  if (elapsed >= totalSec) {
+    finish();
+    return;
+  }
+
+  // Update main timer
+  mainTimer.textContent = formatTime(elapsed);
+
+  // Global progress
+  const pct = (elapsed / totalSec) * 100;
+  globalBar.style.width = pct + '%';
+
+  // Remaining
+  remainingTime_el.textContent = formatTime(totalSec - elapsed);
+
+  // Phase countdown
+  const phaseLeft = settings.interval - phaseElapsed;
+  phaseCountdown.textContent = phaseLeft + 's';
+
+  // Ring progress (inverted: full at start of phase, empty at end)
+  const ringPct = phaseElapsed / settings.interval;
+  const offset = CIRCUMFERENCE * (1 - ringPct);
+  ringProgress.style.strokeDashoffset = Math.max(0, offset);
+
+  // Switch phase
+  if (phaseElapsed >= settings.interval) {
+    setPhase(currentPhase === 'run' ? 'walk' : 'run');
+  }
+}
+
+function start() {
+  if (isRunning) {
+    // Pause
+    clearInterval(ticker);
+    isRunning = false;
+    startBtn.textContent = 'REPRENDRE';
+    synth && synth.cancel();
+    return;
+  }
+
+  isRunning = true;
+  startBtn.textContent = 'PAUSE';
+  resetBtn.disabled = false;
+
+  // First start
+  if (elapsed === 0) {
+    setPhase('run');
+    phaseElapsed = 0; // setPhase resets it, so tick at 1s sets to 1
+  }
+
+  ticker = setInterval(tick, 1000);
+}
+
+function finish() {
+  clearInterval(ticker);
+  isRunning = false;
+  document.body.className = '';
+  speak('Séance terminée ! Bravo !');
+  finishStats.innerHTML = `
+    Durée : <strong>${formatTime(elapsed)}</strong><br>
+    Intervalles réalisés : <strong>${intervalCount}</strong><br>
+    Durée par intervalle : <strong>${settings.interval}s</strong>
+  `;
+  finishOverlay.classList.add('visible');
+}
+
+function resetAll() {
+  clearInterval(ticker);
+  isRunning = false;
+  elapsed = 0;
+  phaseElapsed = 0;
+  intervalCount = 0;
+  currentPhase = 'run';
+  document.body.className = 'idle';
+  phaseLabel.textContent = 'PRÊT';
+  phaseCountdown.textContent = '—';
+  mainTimer.textContent = '00:00';
+  globalBar.style.width = '0%';
+  intervalCount_el.textContent = '0';
+  remainingTime_el.textContent = '—';
+  ringProgress.style.strokeDashoffset = CIRCUMFERENCE;
+  ringProgress.style.stroke = 'var(--run-color)';
+  startBtn.textContent = 'DÉMARRER';
+  resetBtn.disabled = true;
+  finishOverlay.classList.remove('visible');
+  synth && synth.cancel();
+}
+
+startBtn.addEventListener('click', start);
+resetBtn.addEventListener('click', () => { resetAll(); });
+
+// Settings
+const settingsToggle = document.getElementById('settingsToggle');
+const settingsPanel = document.getElementById('settingsPanel');
+
+settingsToggle.addEventListener('click', () => {
+  const open = settingsPanel.classList.toggle('visible');
+  settingsToggle.classList.toggle('open', open);
+});
+
+function adjustSetting(key, delta) {
+  if (isRunning || elapsed > 0) return; // can't change while running
+  if (key === 'interval') {
+    settings.interval = Math.max(5, Math.min(300, settings.interval + delta));
+    document.getElementById('intervalDisplay').textContent = settings.interval + 's';
+  } else if (key === 'duration') {
+    settings.duration = Math.max(1, Math.min(120, settings.duration + delta));
+    document.getElementById('durationDisplay').textContent = settings.duration + 'm';
+  }
+}
+
+// Init ring
+ringProgress.style.strokeDashoffset = CIRCUMFERENCE;
+</script>
+</body>
+</html>
