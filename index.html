@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Présence discrète — vert fluo au survol</title>
+  <style>
+    /* RESET & BASE — fond noir profond, texture subtile */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #000000;
+      background-image: radial-gradient(circle at 10% 20%, rgba(255,255,255,0.02) 1%, transparent 1%);
+      background-size: 28px 28px;
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    /* Carte flottante — légère, respirante, sans lourdeur */
+    .card {
+      max-width: 600px;
+      width: 100%;
+      background: rgba(12, 12, 15, 0.75);
+      backdrop-filter: blur(12px);
+      border-radius: 2.5rem;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.03);
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    /* Titre — contraste élégant */
+    h1 {
+      font-size: 2.6rem;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #FFFFFF 30%, #C0C0C0 80%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    .badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.06);
+      font-size: 0.75rem;
+      letter-spacing: 0.3px;
+      padding: 0.2rem 0.8rem;
+      border-radius: 40px;
+      color: #ddd;
+      font-weight: 450;
+      margin-bottom: 5.5rem;
+      backdrop-filter: blur(4px);
+      border: 0.5px solid rgba(255,255,255,0.1);
+    }
+
+    /* description sobre */
+    .description {
+      color: #b0b0b8;
+      font-weight: 400;
+      font-size: 1rem;
+      line-height: 1.5;
+      margin-bottom: 2.2rem;
+      border-left: 2px solid rgba(255,255,255,0.2);
+      padding-left: 1rem;
+      text-align: left;
+      max-width: 85%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* GRILLE BOUTONS */
+    .buttons-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.2rem;
+      margin-top: 0.5rem;
+    }
+
+    /* Bouton : version sobre + transition fluide */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(20, 20, 28, 0.8);
+      backdrop-filter: blur(4px);
+      padding: 0.85rem 1.8rem;
+      border-radius: 2rem;
+      font-weight: 500;
+      font-size: 0.95rem;
+      letter-spacing: 0.2px;
+      color: #f0f0f0;
+      text-decoration: none;
+      transition: all 0.25s cubic-bezier(0.2, 0, 0, 1);
+      border: 0.5px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+      cursor: pointer;
+    }
+
+    /* flèche interne */
+    .btn span.arrow {
+      transition: transform 0.2s ease;
+      display: inline-block;
+      font-size: 1.1rem;
+    }
+
+    /* === SURVOL VERT FLUO === */
+    .btn:hover {
+      background: #5ce943;       /* vert fluo néon pur */
+      border-color: #5ce943;
+      color: #0a0a0a;            /* texte noir pour contraste fort et lisible */
+      box-shadow: 0 0 12px rgba(57, 255, 20, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
+      transform: translateY(-2px);
+    }
+
+    /* on garde la transition de flèche au survol */
+    .btn:hover span.arrow {
+      transform: translateX(4px);
+      color: #0a0a0a;
+    }
+
+    /* effet au clic pour garder le dynamisme */
+    .btn:active {
+      transform: translateY(1px);
+      transition: 0.05s;
+      box-shadow: 0 0 8px #5ce943;
+    }
+
+    /* option : focus outline raffiné */
+    .btn:focus-visible {
+      outline: 2px solid #5ce943;
+      outline-offset: 3px;
+    }
+
+    /* footer discret */
+    .footer-note {
+      margin-top: 2.5rem;
+      font-size: 0.7rem;
+      color: #5c5c66;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding-top: 1.5rem;
+      display: inline-block;
+      width: 100%;
+    }
+
+    .footer-note a {
+      color: #9c9caa;
+      text-decoration: none;
+      transition: color 0.2s;
+      border-bottom: 1px dotted rgba(255,255,255,0.2);
+    }
+
+    .footer-note a:hover {
+      color: #5ce943;
+      */ color: #39ff14; */
+    }
+
+    /* Responsive */
+    @media (max-width: 500px) {
+      .card {
+        padding: 1.8rem 1.2rem;
+      }
+      h1 {
+        font-size: 2rem;
+      }
+      .description {
+        max-width: 100%;
+        font-size: 0.9rem;
+      }
+      .btn {
+        padding: 0.7rem 1.5rem;
+        font-size: 0.85rem;
+        min-width: 130px;
+      }
+      .buttons-grid {
+        gap: 1rem;
+      }
+    }
+
+    /* animation d'apparition (card) */
+    @keyframes fadeSlideUp {
+      0% { opacity: 0; transform: translateY(12px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .card {
+      animation: fadeSlideUp 0.55s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>· FsX666 ·</h1>
+    <div class="badge">Personal HomePage</div>
+    <div class="description">
+      Quick access menu :
+    </div>
+
+    <div class="buttons-grid">
+      <!-- Bouton 1 : GitHub -->
+      <a href="https://github.com/FsX666" class="btn" target="_blank" rel="noopener noreferrer">
+        <span>GitHub</span>
+        <span class="arrow">↗</span>
+      </a>
+
+      <!-- Bouton 2 : Split Race -->
+      <a href="https://fsx666.github.io/split-race.html" class="btn" target="_blank" rel="noopener noreferrer">
+        <span>Split Race</span>
+        <span class="arrow">↗</span>
+      </a>
+
+      <!-- Bouton 3 : Cronos -->
+      <a href="https://docs.cronos.ovh/" class="btn" target="_blank" rel="noopener noreferrer">
+        <span>Cronos</span>
+        <span class="arrow">↗</span>
+      </a>
+    </div>
+
+    <div class="footer-note">
+      <span>✦ </span>
+      <span style="cursor:default;">Static page / Menu</span>
+      <span> — GitHub Pages</span>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      // une micro touche : logger élégant sans gêne
+      const btns = document.querySelectorAll('.btn');
+      // aucune interaction intrusive, juste un petit rappel dans la console pour l'ambiance
+      console.log('✨ survol des boutons → vert fluo #39ff14 ✨');
+      
+      // optionnel : légère vibration subtile pour l’effet fluo ? non, on reste sobre en perf.
+      // On garde néanmoins une petite prévention pour les liens "#" ou autre (pas présent)
+      // Ce script sert juste à confirmer la cohérence (et une touche d’élégance silencieuse)
+      const fakeFooter = document.querySelector('.footer-note span:first-child');
+      // Rien d'autre, tout le style est dans le CSS
+    })();
+  </script>
+</body>
+</html>
